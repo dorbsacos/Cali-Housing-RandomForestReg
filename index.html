@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>California Housing Price Prediction</title>
+  <style>
+    body {
+      margin: 0; 
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: url("{{ url_for('static', filename='Images/cali.jpg') }}") no-repeat center center fixed;
+      background-size: cover;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.85);
+      margin: 50px auto;
+      padding: 20px 20px 30px 20px;
+      border-radius: 8px;
+      max-width: 550px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 0.5em;
+    }
+    p {
+      font-size: 0.95rem;
+      line-height: 1.4;
+      margin-bottom: 1em;
+      color: #444;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    input[type="number"], button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    button {
+      margin-top: 20px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 4px;
+      background: #f9f9f9;
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>California Housing Price Prediction</h1>
+    <p>
+      Enter values for each field below. If you leave any box empty, we’ll fill in
+      a median default. For <b>Median Income</b>, “3.5” means $35k. 
+      <br/><br/>
+      <b>Population</b> is the total number of people living in that block group or region.
+    </p>
+
+    <div class="form-group">
+      <label for="MedInc">Median Income (e.g. 3.5 => ~35k)</label>
+      <input type="number" step="0.01" id="MedInc" placeholder="3.535" />
+    </div>
+
+    <div class="form-group">
+      <label for="HouseAge">House Age (years)</label>
+      <input type="number" step="1" id="HouseAge" placeholder="29" />
+    </div>
+
+    <div class="form-group">
+      <label for="AveRooms">Average Rooms/Household</label>
+      <input type="number" step="0.01" id="AveRooms" placeholder="5.230" />
+    </div>
+
+    <div class="form-group">
+      <label for="AveBedrms">Average Bedrooms/Household</label>
+      <input type="number" step="0.01" id="AveBedrms" placeholder="1.105" />
+    </div>
+
+    <div class="form-group">
+      <label for="Population">Population (people in that area)</label>
+      <input type="number" step="1" id="Population" placeholder="1166" />
+    </div>
+
+    <div class="form-group">
+      <label for="AveOccup">Average Occupancy (people/household)</label>
+      <input type="number" step="0.01" id="AveOccup" placeholder="2.818" />
+    </div>
+
+    <div class="form-group">
+      <label for="Latitude">Latitude (roughly 32.5–42 for CA)</label>
+      <input type="number" step="0.001" id="Latitude" placeholder="34.260" min="32.5" max="42" />
+    </div>
+
+    <div class="form-group">
+      <label for="Longitude">Longitude (roughly -124.45 to -114.13)</label>
+      <input type="number" step="0.001" id="Longitude" placeholder="-118.490" min="-124.45" max="-114.13" />
+    </div>
+
+    <div class="form-group">
+      <label for="RoomsPerPerson">Rooms per Person</label>
+      <input type="number" step="0.01" id="RoomsPerPerson" placeholder="1.1" />
+    </div>
+
+    <button onclick="submitForm()">Predict</button>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    async function submitForm() {
+      const data = {
+        MedInc: parseFloat(document.getElementById('MedInc').value) || null,
+        HouseAge: parseFloat(document.getElementById('HouseAge').value) || null,
+        AveRooms: parseFloat(document.getElementById('AveRooms').value) || null,
+        AveBedrms: parseFloat(document.getElementById('AveBedrms').value) || null,
+        Population: parseFloat(document.getElementById('Population').value) || null,
+        AveOccup: parseFloat(document.getElementById('AveOccup').value) || null,
+        Latitude: parseFloat(document.getElementById('Latitude').value) || null,
+        Longitude: parseFloat(document.getElementById('Longitude').value) || null,
+        RoomsPerPerson: parseFloat(document.getElementById('RoomsPerPerson').value) || null
+      };
+
+      try {
+        const response = await fetch('/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const result = await response.json();
+
+        if (response.ok) {
+          let msg = `<p><strong>Predicted Median House Value:</strong> ${result.prediction.toFixed(3)}</p>`;
+          msg += `<p><strong>Values Used:</strong></p><ul>`;
+          if (result.used_values_readable) {
+            result.used_values_readable.forEach(item => {
+              msg += `<li>${item}</li>`;
+            });
+          }
+          msg += `</ul>`;
+          document.getElementById('result').innerHTML = msg;
+        } else {
+          document.getElementById('result').innerHTML = 
+            `<p style="color:red;">Error: ${result.error || 'Unknown error'}</p>`;
+        }
+      } catch (error) {
+        console.error(error);
+        document.getElementById('result').innerHTML = 
+          `<p style="color:red;">Unexpected error. Check console for details.</p>`;
+      }
+    }
+  </script>
+</body>
+</html>
